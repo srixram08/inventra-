@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "start": "node server.js"
   },
   "keywords": [

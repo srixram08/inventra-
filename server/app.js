@@ -71,11 +71,23 @@ app.use("/api/sales", saleRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
 
-// ==============================
-// Default Route
-// ==============================
+const path = require("path");
 
-app.get("/", (req, res) => {
+// ==============================
+// Serve Frontend in Production / Render
+// ==============================
+const clientDistPath = path.join(__dirname, "../client/dist");
+app.use(express.static(clientDistPath));
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/api", (req, res) => {
   res.json({
     success: true,
     message: "🚀 Welcome to Inventra ERP API",
@@ -83,14 +95,15 @@ app.get("/", (req, res) => {
   });
 });
 
-// ==============================
-// 404 Route
-// ==============================
-
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route Not Found",
+// Fallback to React index.html for SPA routes (if client build exists)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"), (err) => {
+    if (err) {
+      res.status(200).json({
+        success: true,
+        message: "🚀 Inventra ERP Backend API is running.",
+      });
+    }
   });
 });
 
