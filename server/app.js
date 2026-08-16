@@ -95,8 +95,8 @@ app.get("/api", (req, res) => {
   });
 });
 
-// Fallback to React index.html for SPA routes (if client build exists)
-app.get("*", (req, res) => {
+// Fallback to React index.html for SPA routes (Express 5 compatible)
+app.use((req, res) => {
   res.sendFile(path.join(clientDistPath, "index.html"), (err) => {
     if (err) {
       res.status(200).json({
