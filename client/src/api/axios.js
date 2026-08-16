@@ -4,10 +4,13 @@ const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-    return "http://localhost:5000/api";
+  if (typeof window !== "undefined") {
+    if (window.location.port === "5173" || window.location.port === "3000") {
+      return "http://localhost:5000/api";
+    }
+    return "/api";
   }
-  return "https://inventra-erp.onrender.com/api";
+  return "/api";
 };
 
 const API = axios.create({
