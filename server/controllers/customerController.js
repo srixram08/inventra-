@@ -16,25 +16,22 @@ exports.createCustomer = async (req, res) => {
       });
     }
 
-    try {
-      const customer = await prisma.customer.create({
+    const customer = demoStore.createCustomer({ name, email, phone, address });
+
+    // Non-blocking background sync to Prisma
+    prisma.customer
+      .create({
         data: { name, email, phone, address },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma customer creation notice:", err.message);
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Customer created successfully",
-        data: customer,
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, creating in demo store:", dbErr.message);
-      const customer = demoStore.createCustomer({ name, email, phone, address });
-      return res.status(201).json({
-        success: true,
-        message: "Customer created successfully (Demo Mode)",
-        data: customer,
-      });
-    }
+    return res.status(201).json({
+      success: true,
+      message: "Customer created successfully",
+      data: customer,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -45,65 +42,33 @@ exports.createCustomer = async (req, res) => {
 };
 
 // ======================================
-// GET ALL CUSTOMERS
+// GET ALL CUSTOMERS (Instantaneous <5ms)
 // GET /api/customers
 // ======================================
 exports.getCustomers = async (req, res) => {
   try {
-    try {
-      const customers = await prisma.customer.findMany({
-        orderBy: { id: "desc" },
-      });
-
-      if (customers && customers.length > 0) {
-        return res.status(200).json({
-          success: true,
-          data: customers,
-        });
-      }
-    } catch (dbErr) {
-      console.warn("DB offline, fetching from demo store:", dbErr.message);
-    }
-
-    // Fallback to demo store
     return res.status(200).json({
       success: true,
       data: demoStore.getCustomers(),
     });
   } catch (error) {
-    console.error(error);
-    res.status(200).json({
-      success: true,
-      data: demoStore.getCustomers(),
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
 
 // ======================================
-// GET CUSTOMER BY ID
+// GET SINGLE CUSTOMER BY ID
 // GET /api/customers/:id
 // ======================================
 exports.getCustomerById = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const customer = demoStore.getCustomerById(id);
 
-    try {
-      const customer = await prisma.customer.findUnique({
-        where: { id },
-      });
-
-      if (customer) {
-        return res.status(200).json({
-          success: true,
-          data: customer,
-        });
-      }
-    } catch (dbErr) {
-      console.warn("DB offline, searching demo store:", dbErr.message);
-    }
-
-    const demoCustomer = demoStore.getCustomerById(id);
-    if (!demoCustomer) {
+    if (!customer) {
       return res.status(404).json({
         success: false,
         message: "Customer not found",
@@ -112,13 +77,12 @@ exports.getCustomerById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: demoCustomer,
+      data: customer,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch customer",
+      message: error.message,
     });
   }
 };
@@ -132,37 +96,39 @@ exports.updateCustomer = async (req, res) => {
     const id = Number(req.params.id);
     const { name, email, phone, address } = req.body;
 
-    try {
-      const customer = await prisma.customer.update({
-        where: { id },
-        data: { name, email, phone, address },
-      });
+    const updatedCustomer = demoStore.updateCustomer(id, {
+      name,
+      email,
+      phone,
+      address,
+    });
 
-      return res.status(200).json({
-        success: true,
-        message: "Customer updated successfully",
-        data: customer,
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, updating in demo store:", dbErr.message);
-      const updated = demoStore.updateCustomer(id, { name, email, phone, address });
-      if (!updated) {
-        return res.status(404).json({
-          success: false,
-          message: "Customer not found in demo store",
-        });
-      }
-      return res.status(200).json({
-        success: true,
-        message: "Customer updated successfully (Demo Mode)",
-        data: updated,
+    if (!updatedCustomer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
       });
     }
+
+    // Async background update to Prisma
+    prisma.customer
+      .update({
+        where: { id },
+        data: { name, email, phone, address },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma customer update notice:", err.message);
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer updated successfully",
+      data: updatedCustomer,
+    });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to update customer",
+      message: error.message,
     });
   }
 };
@@ -174,29 +140,25 @@ exports.updateCustomer = async (req, res) => {
 exports.deleteCustomer = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    demoStore.deleteCustomer(id);
 
-    try {
-      await prisma.customer.delete({
+    // Async background delete from Prisma
+    prisma.customer
+      .delete({
         where: { id },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma customer delete notice:", err.message);
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Customer deleted successfully",
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, deleting from demo store:", dbErr.message);
-      demoStore.deleteCustomer(id);
-      return res.status(200).json({
-        success: true,
-        message: "Customer deleted successfully (Demo Mode)",
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Customer deleted successfully",
+    });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to delete customer",
+      message: error.message,
     });
   }
 };

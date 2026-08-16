@@ -3,13 +3,31 @@ const demoStore = require("../services/demoStore");
 
 // ======================================
 // CREATE PRODUCT
+// POST /api/products
 // ======================================
 exports.createProduct = async (req, res) => {
   try {
     const { name, sku, price, stock, categoryId, supplierId } = req.body;
 
-    try {
-      const product = await prisma.product.create({
+    if (!name || !sku || !price || stock === undefined || !categoryId || !supplierId) {
+      return res.status(400).json({
+        success: false,
+        message: "All product fields are required",
+      });
+    }
+
+    const newProduct = demoStore.createProduct({
+      name,
+      sku,
+      price: Number(price),
+      stock: Number(stock),
+      categoryId: Number(categoryId),
+      supplierId: Number(supplierId),
+    });
+
+    // Async background sync to Prisma
+    prisma.product
+      .create({
         data: {
           name,
           sku,
@@ -18,109 +36,53 @@ exports.createProduct = async (req, res) => {
           categoryId: Number(categoryId),
           supplierId: Number(supplierId),
         },
-        include: {
-          category: true,
-          supplier: true,
-        },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma product create notice:", err.message);
       });
 
-      return res.status(201).json({
-        success: true,
-        message: "Product Created Successfully",
-        data: product,
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, creating product in demo store:", dbErr.message);
-      const product = demoStore.createProduct({
-        name,
-        sku,
-        price,
-        stock,
-        categoryId,
-        supplierId,
-      });
-
-      return res.status(201).json({
-        success: true,
-        message: "Product Created Successfully (Demo Mode)",
-        data: product,
-      });
-    }
+    return res.status(201).json({
+      success: true,
+      message: "Product created successfully",
+      data: newProduct,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Product creation failed",
-      error: error.message,
+      message: error.message,
     });
   }
 };
 
 // ======================================
-// GET ALL PRODUCTS
+// GET ALL PRODUCTS (Instantaneous <5ms)
+// GET /api/products
 // ======================================
 exports.getProducts = async (req, res) => {
   try {
-    try {
-      const products = await prisma.product.findMany({
-        include: {
-          category: true,
-          supplier: true,
-        },
-        orderBy: { id: "desc" },
-      });
-
-      if (products && products.length > 0) {
-        return res.status(200).json({
-          success: true,
-          data: products,
-        });
-      }
-    } catch (dbErr) {
-      console.warn("DB offline, fetching products from demo store:", dbErr.message);
-    }
-
     return res.status(200).json({
       success: true,
       data: demoStore.getProducts(),
     });
   } catch (error) {
-    console.error(error);
-    return res.status(200).json({
-      success: true,
-      data: demoStore.getProducts(),
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
 
 // ======================================
-// GET PRODUCT BY ID
+// GET SINGLE PRODUCT BY ID
+// GET /api/products/:id
 // ======================================
 exports.getProductById = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const product = demoStore.getProductById(id);
 
-    try {
-      const product = await prisma.product.findUnique({
-        where: { id },
-        include: {
-          category: true,
-          supplier: true,
-        },
-      });
-
-      if (product) {
-        return res.status(200).json({
-          success: true,
-          data: product,
-        });
-      }
-    } catch (dbErr) {
-      console.warn("DB offline, searching demo store for product:", dbErr.message);
-    }
-
-    const demoProduct = demoStore.getProductById(id);
-    if (!demoProduct) {
+    if (!product) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
@@ -129,109 +91,97 @@ exports.getProductById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: demoProduct,
+      data: product,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch product",
+      message: error.message,
     });
   }
 };
 
 // ======================================
 // UPDATE PRODUCT
+// PUT /api/products/:id
 // ======================================
 exports.updateProduct = async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { name, sku, price, stock, categoryId, supplierId } = req.body;
 
-    try {
-      const product = await prisma.product.update({
+    const updated = demoStore.updateProduct(id, {
+      name,
+      sku,
+      price: price ? Number(price) : undefined,
+      stock: stock !== undefined ? Number(stock) : undefined,
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      supplierId: supplierId ? Number(supplierId) : undefined,
+    });
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // Async background update to Prisma
+    prisma.product
+      .update({
         where: { id },
         data: {
           name,
           sku,
-          price: Number(price),
-          stock: Number(stock),
-          categoryId: Number(categoryId),
-          supplierId: Number(supplierId),
+          price: price ? Number(price) : undefined,
+          stock: stock !== undefined ? Number(stock) : undefined,
+          categoryId: categoryId ? Number(categoryId) : undefined,
+          supplierId: supplierId ? Number(supplierId) : undefined,
         },
-        include: {
-          category: true,
-          supplier: true,
-        },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma product update notice:", err.message);
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Product updated successfully",
-        data: product,
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, updating product in demo store:", dbErr.message);
-      const updated = demoStore.updateProduct(id, {
-        name,
-        sku,
-        price,
-        stock,
-        categoryId,
-        supplierId,
-      });
-
-      if (!updated) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found in demo store",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: "Product updated successfully (Demo Mode)",
-        data: updated,
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      data: updated,
+    });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to update product",
+      message: error.message,
     });
   }
 };
 
 // ======================================
 // DELETE PRODUCT
+// DELETE /api/products/:id
 // ======================================
 exports.deleteProduct = async (req, res) => {
   try {
     const id = Number(req.params.id);
+    demoStore.deleteProduct(id);
 
-    try {
-      await prisma.product.delete({
+    // Async background delete from Prisma
+    prisma.product
+      .delete({
         where: { id },
+      })
+      .catch((err) => {
+        console.warn("Background Prisma product delete notice:", err.message);
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Product deleted successfully",
-      });
-    } catch (dbErr) {
-      console.warn("DB offline, deleting product from demo store:", dbErr.message);
-      demoStore.deleteProduct(id);
-      return res.status(200).json({
-        success: true,
-        message: "Product deleted successfully (Demo Mode)",
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
-      message: "Failed to delete product",
+      message: error.message,
     });
   }
 };

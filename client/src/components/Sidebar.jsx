@@ -53,8 +53,8 @@ function Sidebar() {
   ];
 
   const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+    localStorage.clear();
+    navigate("/login");
   };
 
   return (
