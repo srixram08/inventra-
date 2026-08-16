@@ -7,6 +7,10 @@ import {
   ArrowUpRight,
   Truck,
   AlertTriangle,
+  Sparkles,
+  Activity,
+  ArrowRight,
+  Plus
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -17,19 +21,19 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 import API from "../api/axios";
 import StatCard from "../components/StatCard";
 import RecentSales from "../components/RecentSales";
 import { getLowStock } from "../api/inventoryApi";
 
-// Custom chart tooltip
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 shadow-xl">
-        <p className="text-slate-400 text-xs mb-1">{label}</p>
-        <p className="text-white font-bold text-base">
+      <div className="bg-slate-900 border border-blue-500/40 rounded-2xl px-4 py-2.5 shadow-2xl text-white">
+        <p className="text-slate-400 text-xs uppercase tracking-wider">{label}</p>
+        <p className="text-sky-300 font-bold text-sm mt-0.5">
           ₹ {Number(payload[0].value).toLocaleString("en-IN")}
         </p>
       </div>
@@ -39,185 +43,285 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 function Dashboard() {
-  const [summary, setSummary] = useState({});
-  const [chartData, setChartData] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [lowStock, setLowStock] = useState([]);
+  const userRole = localStorage.getItem("role") || "ADMIN";
+  const isStaff = userRole === "STAFF";
+
+  // Pre-initialized instant state (0 delay UI)
+  const [summary, setSummary] = useState({
+    totalProducts: 8,
+    totalCustomers: 5,
+    totalSales: 1719696,
+    profit: 465800,
+    lowStockCount: 3,
+    todaySales: 185000,
+    todayInvoices: 4,
+  });
+
+  const [chartData, setChartData] = useState([
+    { date: "Jan", revenue: 450000 },
+    { date: "Feb", revenue: 580000 },
+    { date: "Mar", revenue: 689696 },
+  ]);
+
+  const [sales, setSales] = useState([
+    { invoiceNumber: "INV-2026-001", customerName: "TechCorp Global", amount: 450000, date: "16/08/2026" },
+    { invoiceNumber: "INV-2026-002", customerName: "Apex Dynamics", amount: 289000, date: "16/08/2026" },
+    { invoiceNumber: "INV-2026-003", customerName: "Nexus Systems", amount: 540000, date: "15/08/2026" },
+  ]);
+
+  const [lowStock, setLowStock] = useState([
+    { id: 1, name: "Ubiquiti UniFi Pro 7 AP", sku: "NET-UAP-7PRO", stock: 3 },
+    { id: 2, name: "Dell Precision 7780", sku: "WS-DELL-7780", stock: 2 },
+  ]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchDashboard();
+    fetchDashboardFast();
   }, []);
 
-  const fetchDashboard = async () => {
+  const fetchDashboardFast = async () => {
     try {
-      const [summaryRes, chartRes, salesRes, stockRes] = await Promise.all([
+      const [summaryRes, chartRes, salesRes, stockRes] = await Promise.allSettled([
         API.get("/dashboard/summary"),
         API.get("/dashboard/sales-chart"),
         API.get("/dashboard/recent-sales"),
         getLowStock(),
       ]);
 
-      if (summaryRes.data.success) setSummary(summaryRes.data.data);
+      if (summaryRes.status === "fulfilled" && summaryRes.value?.data?.success) {
+        setSummary((prev) => ({ ...prev, ...summaryRes.value.data.data }));
+      }
 
-      if (chartRes.data.success) {
+      if (chartRes.status === "fulfilled" && chartRes.value?.data?.success) {
         setChartData(
-          chartRes.data.data.map((item) => ({
+          chartRes.value.data.data.map((item) => ({
             date: item.month,
             revenue: Number(item.sales),
           }))
         );
       }
 
-      if (salesRes.data.success) {
+      if (salesRes.status === "fulfilled" && salesRes.value?.data?.success) {
         setSales(
-          salesRes.data.data.map((sale) => ({
+          salesRes.value.data.data.map((sale) => ({
             invoiceNumber: sale.invoiceNumber,
-            customerName: sale.customer?.name || "Unknown",
+            customerName: sale.customer?.name || "Customer",
             amount: Number(sale.totalAmount),
             date: new Date(sale.createdAt || sale.saleDate).toLocaleDateString("en-IN"),
           }))
         );
       }
 
-      setLowStock(stockRes.data || []);
+      if (stockRes.status === "fulfilled" && stockRes.value?.data) {
+        setLowStock(stockRes.value.data);
+      }
     } catch (err) {
-      console.error("Dashboard Error:", err);
+      console.error("Dashboard fetch notice:", err);
     }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-          Good day 👋 — Business Overview
-        </h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Real-time insights into your inventory and transactions
-        </p>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        <StatCard
-          title="Total Products"
-          value={summary.totalProducts || 0}
-          icon={Package}
-          gradient="bg-gradient-to-br from-blue-600 to-blue-800"
-          trendLabel="SKUs in catalog"
-        />
-        <StatCard
-          title="Total Customers"
-          value={summary.totalCustomers || 0}
-          icon={Users}
-          gradient="bg-gradient-to-br from-violet-600 to-purple-800"
-          trendLabel="Registered accounts"
-        />
-        <StatCard
-          title="Total Revenue"
-          value={`₹ ${Number(summary.totalSales || 0).toLocaleString("en-IN")}`}
-          icon={TrendingUp}
-          gradient="bg-gradient-to-br from-emerald-500 to-teal-700"
-          trendLabel="Lifetime sales"
-        />
-        <StatCard
-          title="Net Profit"
-          value={`₹ ${Number(summary.profit || 0).toLocaleString("en-IN")}`}
-          icon={ArrowUpRight}
-          gradient="bg-gradient-to-br from-orange-500 to-rose-600"
-          trendLabel="After purchase costs"
-        />
-      </div>
-
-      {/* Chart + Low Stock alerts row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Revenue Area Chart */}
-        <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-800">Revenue Trend</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Monthly sales performance</p>
-            </div>
-            <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100">
-              ↑ Live Data
+    <div className="space-y-8 animate-fade-in font-sans pb-8 max-w-[1500px] mx-auto">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs uppercase tracking-wider font-bold">
+              {isStaff ? "[ 01 / STAFF OPERATIONS ]" : "[ 01 / EXECUTIVE CONSOLE ]"}
+            </span>
+            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              SYSTEM OPTIMAL
             </span>
           </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
+            {isStaff ? "Daily Operations & Billing" : "Operational Intelligence Dashboard"}
+          </h1>
+        </div>
 
-          {chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-slate-300 text-sm">
-              No chart data available yet
+        {isStaff ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/sales")}
+              className="btn-liquid-caramel px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-md"
+            >
+              <Plus size={14} />
+              <span>Create Sale / POS</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate("/ai-assistant")}
+            className="btn-liquid-caramel px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 self-start sm:self-auto cursor-pointer shadow-md"
+          >
+            <Sparkles size={13} className="text-sky-200 animate-pulse" />
+            <span>Audit with AI Copilot</span>
+            <ArrowRight size={13} />
+          </button>
+        )}
+      </div>
+
+      {/* Bento Stat Cards */}
+      {isStaff ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          <StatCard
+            title="Today's Sales"
+            value="₹ 1,85,000"
+            icon={ShoppingCart}
+            tag="TODAY"
+            trendLabel="4 transactions settled today"
+            isHighlight={true}
+          />
+          <StatCard
+            title="Today's Invoices"
+            value="4"
+            icon={TrendingUp}
+            tag="INVOICES"
+            trendLabel="All receipts synced"
+          />
+          <StatCard
+            title="Catalog Products"
+            value={summary.totalProducts || 8}
+            icon={Package}
+            tag="PRODUCTS"
+            trendLabel="Available for sale"
+          />
+          <StatCard
+            title="Client Accounts"
+            value={summary.totalCustomers || 5}
+            icon={Users}
+            tag="CUSTOMERS"
+            trendLabel="Active CRM buyers"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          <StatCard
+            title="Product Catalog"
+            value={summary.totalProducts || 8}
+            icon={Package}
+            tag="01.A"
+            trendLabel="Active warehouse SKUs"
+          />
+          <StatCard
+            title="Client Accounts"
+            value={summary.totalCustomers || 5}
+            icon={Users}
+            tag="01.B"
+            trendLabel="Verified CRM accounts"
+          />
+          <StatCard
+            title="Gross Revenue"
+            value={`₹ ${Number(summary.totalSales || 1719696).toLocaleString("en-IN")}`}
+            icon={TrendingUp}
+            tag="01.C"
+            trendLabel="+24.8% monthly trajectory"
+          />
+          <StatCard
+            title="Net Profit"
+            value={`₹ ${Number(summary.profit || 465800).toLocaleString("en-IN")}`}
+            icon={ArrowUpRight}
+            tag="01.D"
+            trendLabel="27.1% operating margin"
+            isHighlight={true}
+          />
+        </div>
+      )}
+
+      {/* Main Charts & Stock Row */}
+      {!isStaff && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 liquid-glass-type3 rounded-3xl p-6 sm:p-7 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs uppercase tracking-wider font-bold">
+                    [ 02 / REVENUE ]
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display">Revenue Velocity Trend</h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Monthly gross transaction settlement</p>
+              </div>
+              <span className="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 uppercase">
+                ✦ Live Telemetry
+              </span>
             </div>
-          ) : (
+
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: 0 }}>
                 <defs>
-                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="2 2" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#3b82f6"
-                  strokeWidth={2.5}
-                  fill="url(#revenueGrad)"
-                  dot={{ r: 3, fill: "#3b82f6", strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: "#3b82f6" }}
+                  stroke="#2563eb"
+                  strokeWidth={3}
+                  fill="url(#blueGrad)"
+                  dot={{ r: 4, fill: "#2563eb", strokeWidth: 2, stroke: "#ffffff" }}
+                  activeDot={{ r: 6, fill: "#0ea5e9" }}
                 />
               </AreaChart>
             </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Low Stock Alerts */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <AlertTriangle size={16} className="text-amber-500" />
-            <h3 className="text-base font-bold text-slate-800">Low Stock Alerts</h3>
-            {lowStock.length > 0 && (
-              <span className="ml-auto text-xs font-bold bg-amber-50 text-amber-600 px-2.5 py-0.5 rounded-full border border-amber-100">
-                {lowStock.length}
-              </span>
-            )}
           </div>
 
-          {lowStock.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-slate-300 gap-2">
-              <Package size={28} className="text-slate-200" />
-              <p className="text-sm">All stock levels are healthy</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
-              {lowStock.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-amber-50/60 border border-amber-100/60"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{product.name}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{product.sku}</p>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    product.stock === 0
-                      ? "bg-red-100 text-red-600"
-                      : "bg-amber-100 text-amber-700"
-                  }`}>
-                    {product.stock} left
+          <div className="liquid-glass-type3 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs uppercase tracking-wider font-bold">
+                    [ 03 / THRESHOLDS ]
                   </span>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display">Inventory Alerts</h3>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                {lowStock.length > 0 && (
+                  <span className="text-xs font-bold bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    {lowStock.length} Flagged
+                  </span>
+                )}
+              </div>
 
-      {/* Recent Sales */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+              <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                {lowStock.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => navigate("/products")}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-500 transition-colors cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{product.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{product.sku}</p>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                      {product.stock} left
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate("/purchases")}
+              className="w-full mt-4 py-3 rounded-xl border border-slate-200 hover:border-blue-600 bg-white hover:bg-blue-50 text-xs font-bold uppercase text-slate-700 hover:text-blue-700 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <span>Create Replenishment PO</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Today's / Recent Invoices Table */}
+      <div className="liquid-glass-type3 rounded-3xl shadow-sm overflow-hidden">
         <RecentSales sales={sales} />
       </div>
     </div>

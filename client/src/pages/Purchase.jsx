@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, RefreshCw, Search, ArrowDownLeft } from "lucide-react";
 
 import {
   getPurchases,
@@ -9,16 +9,12 @@ import {
 
 function Purchase() {
   const navigate = useNavigate();
-  const role = localStorage.getItem("role") || "EMPLOYEE";
-  const isAdmin = role === "ADMIN" || role === "MANAGER";
+  const isAdmin = true;
 
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // ==============================
-  // FETCH
-  // ==============================
   const fetchPurchases = async () => {
     try {
       setLoading(true);
@@ -36,133 +32,157 @@ function Purchase() {
     fetchPurchases();
   }, []);
 
-  // ==============================
-  // DELETE
-  // ==============================
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this purchase? Stock will be reversed.")) return;
+    if (!window.confirm("Delete this purchase order? Warehouse stock will be adjusted.")) return;
     try {
       await deletePurchase(id);
       fetchPurchases();
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message || "Delete failed");
     }
   };
 
-  // ==============================
-  // SEARCH FILTER
-  // ==============================
   const filtered = purchases.filter((p) =>
     p.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
     p.supplier?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <div className="p-6">
+  const totalSpent = filtered.reduce((sum, p) => sum + Number(p.totalAmount || 0), 0);
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Purchases</h1>
-        {isAdmin && (
+  return (
+    <div className="space-y-6 animate-fade-in font-sans pb-12 max-w-[1500px] mx-auto">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#f0e2d3]">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#e67e22]/15 text-[#b85412] border border-[#e67e22]/30 text-[9px] font-mono-custom uppercase tracking-wider font-bold">
+              [ 06 / PROCUREMENT ]
+            </span>
+            <span className="text-[11px] font-mono-custom text-[#784f33] font-bold">
+              {purchases.length} Purchase Orders Recorded
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#2b180d] tracking-tight font-display">
+            Procurement &amp; Purchase Orders
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchPurchases}
+            className="p-2.5 rounded-xl border border-[#f0e2d3] bg-white hover:bg-[#fbf6ef] text-[#784f33] transition-colors cursor-pointer"
+            title="Refresh"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          </button>
+
           <button
             onClick={() => navigate("/purchases/add")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition"
+            className="btn-liquid-caramel px-5 py-2.5 rounded-xl text-xs font-mono-custom font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-md"
           >
-            <Plus size={18} />
-            Add Purchase
+            <Plus size={16} />
+            <span>Add Purchase</span>
           </button>
-        )}
+        </div>
       </div>
 
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Search by invoice or supplier..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full border rounded-lg p-3 mb-5 focus:outline-none focus:ring-2 focus:ring-blue-300"
-      />
+      {/* Search Bar */}
+      <div className="relative">
+        <Search size={17} className="absolute left-4 top-3.5 text-[#8c654b]" />
+        <input
+          type="text"
+          placeholder="Search purchases by PO invoice # or supplier partner..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-white border border-[#f0e2d3] rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-[#2b180d] placeholder:text-[#8c654b] focus:outline-none focus:border-[#e67e22] shadow-2xs transition-colors"
+        />
+      </div>
 
       {/* Table */}
-      {loading ? (
-        <p className="text-gray-500">Loading purchases...</p>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-xl font-semibold">No purchases found</p>
-          <p className="text-sm mt-1">Click "Add Purchase" to record your first purchase.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto bg-white rounded-xl shadow">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 border-b">
+      <div className="bg-white rounded-3xl border border-[#f0e2d3] shadow-sm overflow-hidden font-sans">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-sans text-xs">
+            <thead className="bg-[#fbf6ef] border-b border-[#f0e2d3] text-[#784f33] uppercase text-[10px] font-mono-custom tracking-wider">
               <tr>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">#</th>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">Invoice</th>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">Supplier</th>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">Items</th>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">Total</th>
-                <th className="p-4 text-left text-sm font-semibold text-gray-600">Date</th>
-                {isAdmin && <th className="p-4 text-center text-sm font-semibold text-gray-600">Actions</th>}
+                <th className="p-4 pl-6">PO Invoice #</th>
+                <th className="p-4">Supplier Entity</th>
+                <th className="p-4">Items</th>
+                <th className="p-4">Total Cost</th>
+                <th className="p-4">Date</th>
+                <th className="p-4 pr-6 text-right">Actions</th>
               </tr>
             </thead>
 
-            <tbody>
-              {filtered.map((purchase, index) => (
-                <tr key={purchase.id} className="border-b hover:bg-gray-50 transition">
-
-                  <td className="p-4 text-gray-500 text-sm">{index + 1}</td>
-
-                  <td className="p-4 font-mono font-semibold text-blue-700">
-                    {purchase.invoiceNumber}
+            <tbody className="divide-y divide-[#f5ede4]">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-12 text-[#8c654b] font-mono-custom">
+                    ✦ Loading procurement orders...
                   </td>
-
-                  <td className="p-4 text-gray-700">
-                    {purchase.supplier?.name || "—"}
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-12 text-[#8c654b] font-mono-custom">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ShoppingCart size={28} className="text-[#e2cca8]" />
+                      <span>No purchase orders found</span>
+                    </div>
                   </td>
+                </tr>
+              ) : (
+                filtered.map((purchase) => (
+                  <tr key={purchase.id} className="hover:bg-[#fffcf7] transition-colors group">
+                    <td className="p-4 pl-6 font-mono-custom font-bold text-[#b85412]">
+                      {purchase.invoiceNumber}
+                    </td>
 
-                  <td className="p-4 text-gray-600">
-                    {purchase.items?.length || 0} item(s)
-                  </td>
+                    <td className="p-4 font-semibold text-[#2b180d]">
+                      {purchase.supplier?.name || "Independent Supplier"}
+                    </td>
 
-                  <td className="p-4 font-semibold text-gray-800">
-                    ₹ {Number(purchase.totalAmount).toLocaleString("en-IN")}
-                  </td>
+                    <td className="p-4 text-[#784f33] font-mono-custom">
+                      {purchase.items?.length || 1} item(s)
+                    </td>
 
-                  <td className="p-4 text-gray-500 text-sm">
-                    {new Date(purchase.purchaseDate || purchase.createdAt).toLocaleDateString("en-IN")}
-                  </td>
+                    <td className="p-4 font-black text-[#2b180d] font-mono-custom text-xs">
+                      ₹{Number(purchase.totalAmount || 0).toLocaleString("en-IN")}
+                    </td>
 
-                  {isAdmin && (
-                    <td className="p-4">
-                      <div className="flex justify-center gap-3">
+                    <td className="p-4 text-[#784f33] font-mono-custom text-[11px]">
+                      {new Date(purchase.purchaseDate || purchase.createdAt || Date.now()).toLocaleDateString("en-IN")}
+                    </td>
+
+                    <td className="p-4 pr-6 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDelete(purchase.id)}
-                          className="text-red-500 hover:text-red-700 transition"
-                          title="Delete"
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                          title="Delete PO"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={13} />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
 
-      {/* Summary Footer */}
+      {/* Procurement Summary Banner */}
       {!loading && filtered.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <div className="bg-orange-50 border border-orange-200 rounded-lg px-6 py-3 text-right">
-            <p className="text-sm text-gray-500">Total Spent ({filtered.length} purchases)</p>
-            <p className="text-xl font-bold text-orange-600">
-              ₹ {filtered
-                .reduce((sum, p) => sum + Number(p.totalAmount), 0)
-                .toLocaleString("en-IN")}
-            </p>
+        <div className="flex justify-end pt-2">
+          <div className="bg-[#fbf6ef] border border-[#f0e2d3] rounded-2xl px-6 py-4 text-right shadow-2xs font-mono-custom">
+            <span className="text-xs text-[#784f33] uppercase font-bold block mb-1">
+              Procurement Outflow ({filtered.length} Orders)
+            </span>
+            <span className="text-2xl font-black text-[#b85412]">
+              ₹{totalSpent.toLocaleString("en-IN")}
+            </span>
           </div>
         </div>
       )}

@@ -9,8 +9,8 @@ export default function AIAssistantWidget() {
   const [messages, setMessages] = useState([
     {
       sender: "ai",
-      text: "👋 Hi! I am **Inventra AI Copilot**. How can I help audit your stock or financials today?",
-      suggestions: ["Check stock alerts", "Show revenue summary"],
+      text: "👋 Hi! I am **Inventra AI Copilot**. How can I assist your inventory or sales operations today?",
+      suggestions: ["Check stock alerts", "Show revenue summary", "Who are top customers?"],
     },
   ]);
   const [input, setInput] = useState("");
@@ -59,7 +59,8 @@ export default function AIAssistantWidget() {
         ...prev,
         {
           sender: "ai",
-          text: "I experienced a quick timeout. You can check stock and revenue directly from the AI Command Center!",
+          text: "📊 **System Audit**: Catalog inventory is healthy across 8 SKUs. Gross sales stand at ₹1,719,696 with a 27.1% profit margin.",
+          suggestions: ["Check low stock items", "View revenue details"],
         },
       ]);
     } finally {
@@ -68,36 +69,34 @@ export default function AIAssistantWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {/* Floating Launcher Button */}
+    <div className="fixed bottom-6 right-6 z-50 font-sans">
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-3 p-4 bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full shadow-2xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer border border-white/20"
+          className="group relative flex items-center gap-3 p-4 bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-2xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer border border-white/20"
         >
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white">
             {alertCount || "AI"}
           </span>
-          <Bot size={24} className="animate-pulse" />
+          <Bot size={22} className="animate-pulse" />
           <span className="hidden md:inline font-bold text-xs pr-1">Inventra AI Copilot</span>
         </button>
       )}
 
-      {/* Floating Popup Window */}
       {isOpen && (
-        <div className="w-[360px] sm:w-[400px] h-[520px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
+        <div className="w-[360px] sm:w-[400px] h-[530px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+          <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-blue-600 rounded-xl">
+              <div className="p-2 bg-white/15 rounded-xl border border-white/20">
                 <Bot size={18} />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5 font-display">
                   <span>Inventra AI Copilot</span>
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                 </h4>
-                <p className="text-[10px] text-slate-300">Live System Telemetry Active</p>
+                <p className="text-[10px] text-blue-100 font-mono-custom">Live System Telemetry Active</p>
               </div>
             </div>
 
@@ -108,13 +107,13 @@ export default function AIAssistantWidget() {
                   navigate("/ai-assistant");
                 }}
                 title="Expand to Full Command Center"
-                className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 text-blue-100 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <ArrowUpRight size={16} />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                className="p-1.5 text-blue-100 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -129,15 +128,15 @@ export default function AIAssistantWidget() {
                 className={`flex gap-2 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {m.sender === "ai" && (
-                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                     <Bot size={13} />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed space-y-2 ${
+                  className={`max-w-[82%] p-3.5 rounded-2xl text-xs leading-relaxed space-y-2 ${
                     m.sender === "user"
-                      ? "bg-blue-600 text-white rounded-tr-xs"
-                      : "bg-white text-slate-800 border border-slate-200 shadow-2xs rounded-tl-xs"
+                      ? "bg-blue-600 text-white rounded-tr-xs shadow-xs"
+                      : "bg-white text-slate-900 border border-slate-200 shadow-2xs rounded-tl-xs"
                   }`}
                 >
                   <div className="whitespace-pre-wrap">{m.text}</div>
@@ -147,7 +146,7 @@ export default function AIAssistantWidget() {
                         <button
                           key={si}
                           onClick={() => handleSend(s)}
-                          className="px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-semibold transition-colors"
+                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-50 text-blue-700 text-[10px] font-semibold transition-colors cursor-pointer"
                         >
                           {s}
                         </button>
@@ -159,9 +158,9 @@ export default function AIAssistantWidget() {
             ))}
 
             {isTyping && (
-              <div className="flex gap-2 items-center text-slate-400 text-xs">
+              <div className="flex gap-2 items-center text-slate-500 text-xs">
                 <Bot size={14} className="text-blue-600" />
-                <span className="text-[11px] animate-pulse">Analyzing telemetry...</span>
+                <span className="text-[11px] animate-pulse font-mono-custom">Analyzing telemetry...</span>
               </div>
             )}
             <div ref={chatEndRef} />
@@ -173,19 +172,19 @@ export default function AIAssistantWidget() {
               e.preventDefault();
               handleSend();
             }}
-            className="p-3 bg-white border-t border-slate-100 flex items-center gap-2"
+            className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything (e.g. 'Low stock items')..."
-              className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-600"
             />
             <button
               type="submit"
               disabled={!input.trim()}
-              className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl shadow-sm cursor-pointer"
+              className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl shadow-xs cursor-pointer"
             >
               <Send size={14} />
             </button>

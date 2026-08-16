@@ -1,27 +1,73 @@
-function StatCard({ title, value, icon: Icon, gradient, trend, trendLabel }) {
+function StatCard({ title, value, icon: Icon, tag = "STAT", trendLabel, isHighlight = false }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${gradient}`}>
-      {/* Background glow orb */}
-      <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+    <div
+      className={`relative overflow-hidden rounded-3xl p-6 transition-all duration-300 group ${
+        isHighlight
+          ? "bright-brown-card text-white shadow-xl"
+          : "liquid-glass-type3 text-slate-900 shadow-sm"
+      }`}
+    >
+      {/* Glow Ambient Corner */}
+      {isHighlight && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/25 rounded-full blur-2xl pointer-events-none" />
+      )}
 
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-semibold text-white/70 uppercase tracking-wider">{title}</p>
-          <h2 className="text-3xl font-black mt-2 tracking-tight">{value}</h2>
+      <div className="flex items-start justify-between relative z-10">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[9px] font-mono-custom font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                isHighlight
+                  ? "bg-white/20 text-white border border-white/30"
+                  : "bg-blue-50 text-blue-700 border border-blue-200"
+              }`}
+            >
+              [ {tag} ]
+            </span>
+          </div>
+
+          <p
+            className={`text-xs font-semibold uppercase tracking-wider pt-1.5 ${
+              isHighlight ? "text-blue-100" : "text-slate-500"
+            }`}
+          >
+            {title}
+          </p>
+
+          <h2 className="text-3xl font-black tracking-tight font-mono-custom pt-1">
+            {value}
+          </h2>
+
           {trendLabel && (
-            <p className="text-xs mt-2 text-white/60 font-medium">{trendLabel}</p>
+            <p
+              className={`text-[11px] font-mono-custom font-medium pt-1 ${
+                isHighlight ? "text-blue-100/90" : "text-slate-400"
+              }`}
+            >
+              ✦ {trendLabel}
+            </p>
           )}
         </div>
 
         {Icon && (
-          <div className="bg-white/15 backdrop-blur-sm p-3 rounded-xl">
-            <Icon size={26} className="text-white" />
+          <div
+            className={`p-3.5 rounded-2xl transition-transform group-hover:scale-110 shadow-sm ${
+              isHighlight
+                ? "bg-white/15 text-sky-200 border border-white/20"
+                : "bg-blue-50 text-blue-600 border border-blue-100"
+            }`}
+          >
+            <Icon size={22} />
           </div>
         )}
       </div>
 
-      {/* Bottom shimmer line */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+      {/* Bottom highlight line */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-[2.5px] ${
+          isHighlight ? "bg-gradient-to-r from-blue-400 to-sky-300" : "bg-transparent group-hover:bg-blue-600 transition-colors"
+        }`}
+      />
     </div>
   );
 }
