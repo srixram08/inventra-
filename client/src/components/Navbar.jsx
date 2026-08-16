@@ -1,10 +1,11 @@
-import { Bell, UserCircle, Package, X, LogOut } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Bell, UserCircle, Package, X, LogOut, Sparkles } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { getLowStock } from "../api/inventoryApi";
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [lowStockAlerts, setLowStockAlerts] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -37,6 +38,7 @@ function Navbar() {
 
   const getPageTitle = (path) => {
     if (path.startsWith("/dashboard")) return "Dashboard Overview";
+    if (path.startsWith("/ai-assistant")) return "Inventra AI Copilot • Enterprise Telemetry";
     if (path.startsWith("/products")) return "Product Catalog";
     if (path.startsWith("/customers")) return "Customer Directory";
     if (path.startsWith("/suppliers")) return "Supplier Registry";
@@ -52,7 +54,15 @@ function Navbar() {
         {getPageTitle(location.pathname)}
       </h2>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 sm:gap-6">
+        {/* AI Copilot Direct Quick Link */}
+        <button
+          onClick={() => navigate("/ai-assistant")}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/70 text-blue-700 hover:from-blue-100 hover:to-indigo-100 text-xs font-bold transition-all active:scale-95 shadow-2xs cursor-pointer"
+        >
+          <Sparkles size={14} className="text-amber-500 animate-pulse" />
+          <span>AI Copilot</span>
+        </button>
         {/* Notification Dropdown Container */}
         <div className="relative" ref={dropdownRef}>
           <button 

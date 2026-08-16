@@ -47,6 +47,9 @@ const saleRoutes = require("./routes/saleRoutes");
 // Dashboard (Phase 8)
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
+// AI Assistant & Monitoring
+const aiRoutes = require("./routes/aiRoutes");
+
 // ==============================
 // API Routes
 // ==============================
@@ -70,6 +73,8 @@ app.use("/api/purchases", purchaseRoutes);
 app.use("/api/sales", saleRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/ai", aiRoutes);
 
 const path = require("path");
 

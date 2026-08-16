@@ -6,6 +6,7 @@ import {
   Truck,
   FileText,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "./Logo";
@@ -19,6 +20,12 @@ function Sidebar() {
       name: "Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard",
+    },
+    {
+      name: "AI Copilot",
+      icon: Sparkles,
+      path: "/ai-assistant",
+      isAi: true,
     },
     {
       name: "Products",
@@ -92,8 +99,15 @@ function Sidebar() {
                     : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
                 }`}
               >
-                <Icon size={19} className={isActive ? "text-white" : "text-slate-400"} />
-                <span className="text-sm font-medium">{item.name}</span>
+                <div className="flex items-center gap-3.5">
+                  <Icon size={19} className={isActive ? "text-white" : item.isAi ? "text-amber-400" : "text-slate-400"} />
+                  <span className="text-sm font-medium">{item.name}</span>
+                </div>
+                {item.isAi && (
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-500 to-indigo-500 text-white shadow-xs">
+                    Live
+                  </span>
+                )}
               </button>
             );
           })}

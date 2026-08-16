@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import AIAssistant from "./pages/AIAssistant";
 
 import Customers from "./pages/Customers";
 import AddCustomer from "./pages/AddCustomer";
@@ -34,6 +35,7 @@ function App() {
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
 
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/ai-assistant" element={<AIAssistant />} />
 
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/add" element={<AddCustomer />} />
